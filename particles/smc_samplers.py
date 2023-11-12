@@ -826,7 +826,6 @@ class AdaptiveTempering(FKSMCsampler):
                 delta = optimize.brentq(f, 1.e-12, 1. - epn)  # secant search
                 # left endpoint is >0, since f(0.) = nan if any likelihood = -inf
                 #delta = optimize.minimize(fun=f, x0=1.e-6, method='Newton-CG')['x']
-                print('brentq method worked')
             except:
                 delta = 1.e-6
                 ess = rs.essl(delta * x.llik)

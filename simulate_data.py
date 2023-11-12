@@ -35,7 +35,7 @@ def create_dictionary(p_ind: int, p_group: int):
     step = p_ind // p_group
     return {ind: group for group in range(p_group) for ind in range(group * step, group * step + step)}
 
-def create_dataset(p_ind: int, p_group: int, p_ext: int, n: int, step: int):
+def simulate_data(p_ind: int, p_group: int, p_ext: int, n: int):
     """
     Create a synthetic dataset.
 
@@ -49,6 +49,8 @@ def create_dataset(p_ind: int, p_group: int, p_ext: int, n: int, step: int):
     Returns:
     - Tuple: X (covariates), y (outcome), dict_group (mapping), p_ext (number of external variables).
     """
+    step = int(p_ind/p_group)
+
     # Generate individual covariates and coefficients
     X_ind, coeff_ind = create_covariates(p=p_ind, n=n, step=np.array([p_ind - (step * 2 + 1), p_ind - (step + 1), p_ind - 1]))
 

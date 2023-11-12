@@ -913,7 +913,7 @@ class BiLevelPrior(ProbDist):
         self.dim = p_group + p_ind
         
     def rvs(self, size=1):        
-        out = np.empty((size, self.dim), dtype=np.bool)
+        out = np.empty((size, self.dim), dtype=bool)
         
         for i in range(self.p_group):
             out[:, i] = Bernoulli(self.pi_group).rvs(size=size)

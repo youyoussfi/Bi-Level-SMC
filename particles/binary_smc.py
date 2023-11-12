@@ -132,9 +132,7 @@ class NestedLogistic(dists.DiscreteDist):
                     coeffs[i, preds] = reg.coef_
                 else:
                     coeffs[i, i] = logit(ph[i])
-        print(ph)
         sparsity = (np.sum(coeffs!=0.) - dim) / (0.5 * dim * (dim - 1))
-        print('edgy: %f, sparsity: %f' % (np.average(edgy), sparsity))
         return cls(coeffs, edgy)
 
 def corr_bin(pi, pj, pij):
@@ -512,7 +510,7 @@ class BiLevelProposal(dists.DiscreteDist):
         return prob
 
     def rvs(self, size=1):        
-        out = np.empty((size, self.dim), dtype=np.bool)
+        out = np.empty((size, self.dim), dtype=bool)
         for i in range(self.dim):
             out[:, i] = dists.Bernoulli(self.predict_prob(out, i)).rvs(size=size)
 
@@ -568,7 +566,6 @@ class BiLevelProposal(dists.DiscreteDist):
                     coeffs[i, i] = logit(ph[i])
             
         sparsity = (np.sum(coeffs!=0.) - dim) / (0.5 * dim * (dim - 1))
-        print('edgy: %f, sparsity: %f' % (np.average(edgy), sparsity))
         return cls(coeffs, edgy, dict_group)
        
 class BiLevelBinaryMetropolis(ssps.ArrayMetropolis):
