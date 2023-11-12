@@ -11,6 +11,7 @@ Motivated by a real-world application in cardiology, this work presents an algor
 ## Code Organization
 
 The code is organized as follows:
+.
 ├── run_smc.ipynb
 ├── build_smc.py
 ├── simulate_data.py
@@ -31,15 +32,13 @@ The code is organized as follows:
 
 The `particles` folder is based on the Particles package developed by Nicolas Chopin: [Particles Package](https://github.com/nchopin/particles).
 
-## Usage Example
-
-The provided code includes the following files:
-
 - `run_smc.ipynb`: Jupyter notebook to run the bi-level SMC algorithm.
 - `build_smc.py`: Python script to build the bi-level SMC algorithm.
 - `simulate_data.py`: Python script to create synthetic data.
 
-Here is an example of how to run the code:
+## Usage Example
+
+The provided code includes the following files:
 
 ```python
 # Import necessary packages
@@ -72,8 +71,3 @@ smc = bi_level_SMC(p_group=5,
                    approximation_method='ALA',
                    pi_ind=0.5,
                    pi_group=0.5)
-
-
-
-
-
