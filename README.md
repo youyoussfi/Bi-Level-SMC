@@ -42,7 +42,6 @@ The `particles` folder is based on the Particles package developed by Nicolas Ch
 
 ```python
 from build_smc import bi_level_SMC
-import pickle 
 
 # Build and run the SMC for bi-level variable selection
 
