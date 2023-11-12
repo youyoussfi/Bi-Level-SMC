@@ -41,27 +41,44 @@ The `particles` folder is based on the Particles package developed by Nicolas Ch
 ## Example
 
 ```python
-from build_smc import bi_level_SMC
+from simulate_data import simulate_data
+from build_smc import bi_level_SMC  
+import pickle 
+import numpy
 
 # Build and run the SMC for bi-level variable selection
 
-# Parameters for the bi_level_SMC function:
+# Parameters :
 # - p_group: Number of group variables
 # - p_ext: Number of external variables
 # - p_ind: Number of individual variables
+# - cov_var: Value of the variance-covariance matrix
 # - n: Number of observations
-# - nprocs: Number of cores used to run the algorithm 
+# - nprocs: Number of cores used to launch the algorithm 
 # - N: Number of particles
-# - P: Length of the Markov chains
+# - P: Length of the Markov chains.
 # - nruns: Number of runs
 # - approximation_method: Likelihood approximation method ('ALA' or 'LA')
 # - pi_ind: Parameter of the Bernoulli prior distribution for individual variables
 # - pi_group: Parameter of the Bernoulli prior distribution for group variables
 
-smc = bi_level_SMC(p_group=5,
-                   p_ext=5,
-                   p_ind=50,
-                   n=100,
+p_ind = 50
+p_group = 5
+p_ext = 5
+cov_var = 0.5
+n = 100
+
+# Simulate data
+data = simulate_data(p_ind=p_ind, 
+                     p_group=p_group, 
+                     p_ext=p_ext, 
+                     cov_var=cov_var,
+                     n=n)
+
+# Build and run SMC
+smc = bi_level_SMC(data=data,
+                   p_group=p_group, 
+                   p_ind=p_ind, 
                    nprocs=-5,
                    N=10000,
                    P=1000,
@@ -70,5 +87,8 @@ smc = bi_level_SMC(p_group=5,
                    pi_ind=0.5,
                    pi_group=0.5)
 
-# Get results of the variable selection
-selection = smc_results[0]['output'].X.theta
+# Get posterior probabilities of inclusion
+run = 0
+selection = numpy.mean(smc[run]['output'].X.theta, axis=0)
+group_selection = selection[:p_group])
+ind_selection = selection[p_group:])
