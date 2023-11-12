@@ -64,16 +64,13 @@ import numpy
 
 p_ind = 50
 p_group = 5
-p_ext = 5
-cov_var = 0.5
-n = 100
 
 # Simulate data
 data = simulate_data(p_ind=p_ind, 
                      p_group=p_group, 
-                     p_ext=p_ext, 
-                     cov_var=cov_var,
-                     n=n)
+                     p_ext=5, 
+                     cov_var=0.5,
+                     n=100)
 
 # Build and run SMC
 smc = bi_level_SMC(data=data,
