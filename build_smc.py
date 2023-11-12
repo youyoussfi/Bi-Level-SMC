@@ -19,7 +19,7 @@ def bi_level_SMC(p_group: int, p_ext: int, p_ind: int, n: int, nprocs: int, N: i
     - n (int): Number of observations.
 
     ** For the SMC algorithm: **
-    - nprocs (int): Number of cores used to launch the algorithm.
+    - nprocs (int): Number of cores used to run the algorithm.
     - N (int): Number of particles.
     - P (int): Length of the Markov chain.
     - nruns (int): Number of runs.

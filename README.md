@@ -38,9 +38,7 @@ The `particles` folder is based on the Particles package developed by Nicolas Ch
 - `build_smc.py`: builds the SMC algorithm.
 - `simulate_data.py`: creates synthetic data to run the SMC algorithm.
 
-## Usage Example
-
-The provided code includes the following files:
+## Example
 
 ```python
 from build_smc import bi_level_SMC
@@ -53,7 +51,7 @@ import pickle
 # - p_ext: Number of external variables
 # - p_ind: Number of individual variables
 # - n: Number of observations
-# - nprocs: Number of cores used to launch the algorithm 
+# - nprocs: Number of cores used to run the algorithm 
 # - N: Number of particles
 # - P: Length of the Markov chain
 # - nruns: Number of runs
