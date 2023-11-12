@@ -52,7 +52,7 @@ from build_smc import bi_level_SMC
 # - n: Number of observations
 # - nprocs: Number of cores used to run the algorithm 
 # - N: Number of particles
-# - P: Length of the Markov chain
+# - P: Length of the Markov chains
 # - nruns: Number of runs
 # - approximation_method: Likelihood approximation method ('ALA' or 'LA')
 # - pi_ind: Parameter of the Bernoulli prior distribution for individual variables
@@ -69,3 +69,6 @@ smc = bi_level_SMC(p_group=5,
                    approximation_method='ALA',
                    pi_ind=0.5,
                    pi_group=0.5)
+
+# Get results of the variable selection
+selection = smc_results[0]['output'].X.theta

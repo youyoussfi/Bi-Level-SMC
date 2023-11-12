@@ -21,7 +21,7 @@ def bi_level_SMC(p_group: int, p_ext: int, p_ind: int, n: int, nprocs: int, N: i
     ** For the SMC algorithm: **
     - nprocs (int): Number of cores used to run the algorithm.
     - N (int): Number of particles.
-    - P (int): Length of the Markov chain.
+    - P (int): Length of the Markov chains.
     - nruns (int): Number of runs.
     - approximation_method (str): Likelihood approximation method ('ALA' or 'LA').
     - pi_ind (float): Parameter of the Bernoulli prior distribution for individual variables.
