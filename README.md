@@ -11,6 +11,8 @@ Motivated by a real-world application in cardiology, this work presents an algor
 ## Code Organization
 
 The code is organized as follows:
+
+```
 .
 ├── run_smc.ipynb
 ├── build_smc.py
@@ -28,7 +30,7 @@ The code is organized as follows:
 │ ├── smoothing.py
 │ ├── state_space_models.py
 │ └── utils.py
-
+```
 
 The `particles` folder is based on the Particles package developed by Nicolas Chopin: [Particles Package](https://github.com/nchopin/particles).
 
