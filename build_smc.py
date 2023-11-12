@@ -6,13 +6,14 @@ from particles import binary_smc
 from particles import multiSMC
 
 
-def bi_level_SMC(p_group: int, p_ext: int, p_ind: int, n: int, nprocs: int, N: int, P: int, nruns: int,
+def bi_level_SMC(data, p_group: int, p_ext: int, p_ind: int, n: int, nprocs: int, N: int, P: int, nruns: int,
                  approximation_method: str, pi_ind: float, pi_group: float):
     """
     Build a Sequential Monte Carlo (SMC) algorithm for a bi-level variable selection model.
 
     Parameters:
-    ** To simulate data: **
+    ** Input data: **
+    - data :
     - p_group (int): Number of group variables.
     - p_ext (int): Number of external variables.
     - p_ind (int): Number of individual variables.
@@ -34,10 +35,7 @@ def bi_level_SMC(p_group: int, p_ext: int, p_ind: int, n: int, nprocs: int, N: i
     if approximation_method not in ['ALA', 'LA']:
         raise ValueError("Invalid approximation_method. Supported values are 'ALA' or 'LA'.")
     
-    # Step 1: Simulate data
-    data = simulate_data(p_ind=p_ind, p_group=p_group, p_ext=p_ext, n=n)
-
-    # Step 2: Specify the prior distribution
+    # Step 1: Specify the prior distribution
     prior = distributions.BiLevelPrior(p_group=p_group, p_ind=p_ind, pi_group=pi_group, pi_ind=pi_ind, dict_group=data[2])
 
     # Step 3: Specify the likelihood approximation method
