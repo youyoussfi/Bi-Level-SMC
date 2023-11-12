@@ -34,16 +34,15 @@ The code is organized as follows:
 
 The `particles` folder is based on the Particles package developed by Nicolas Chopin: [Particles Package](https://github.com/nchopin/particles).
 
-- `run_smc.ipynb`: Jupyter notebook to run the bi-level SMC algorithm.
-- `build_smc.py`: Python script to build the bi-level SMC algorithm.
-- `simulate_data.py`: Python script to create synthetic data.
+- `run_smc.ipynb`: runs a SMC algorithm to perform bi-level variable selection.
+- `build_smc.py`: builds the SMC algorithm.
+- `simulate_data.py`: creates synthetic data to run the SMC algorithm.
 
 ## Usage Example
 
 The provided code includes the following files:
 
 ```python
-# Import necessary packages
 from build_smc import bi_level_SMC
 import pickle 
 
