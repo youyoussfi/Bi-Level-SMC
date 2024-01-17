@@ -4,7 +4,8 @@ from scipy.stats import norm
 def create_covariates(p: int, 
                       n: int, 
                       cov_var: float,
-                      step: int):
+                      step: int,
+                      beta: float):
     """
     Generate synthetic covariates.
 
@@ -24,7 +25,7 @@ def create_covariates(p: int,
                                       size=n)
     coeff = np.zeros(p)
     if step is not None:
-        coeff[step] = 1
+        coeff[step] = beta
     return X, coeff
 
 def create_dictionary(p_ind: int, 
@@ -46,7 +47,8 @@ def simulate_data(p_ind: int,
                   p_group: int, 
                   p_ext: int, 
                   cov_var: float,
-                  n: int):
+                  n: int,
+                  beta: float):
     """
     Create a synthetic dataset.
 
@@ -66,19 +68,22 @@ def simulate_data(p_ind: int,
     X_ind, coeff_ind = create_covariates(p=p_ind, 
                                          n=n,
                                          cov_var=cov_var,
-                                         step=np.array([p_ind - (step * 2 + 1), p_ind - (step + 1), p_ind - 1]))
+                                         step=np.array([p_ind - (step * 2 + 1), p_ind - (step + 1), p_ind - 1]),
+                                         beta=beta)
 
     # Generate group covariates and coefficients
     X_group, coeff_group = create_covariates(p=p_group, 
                                              n=n, 
                                              cov_var=cov_var,
-                                             step=np.array([2, 3, 4]))
+                                             step=np.array([2, 3, 4]),
+                                             beta=beta)
 
     # Generate external covariates and coefficients
     X_ext, coeff_ext = create_covariates(p=p_ext, 
                                          n=n, 
                                          cov_var=cov_var,
-                                         step=np.array([2, 3, 4]))
+                                         step=np.array([2, 3, 4]),
+                                         beta=beta)
 
     # Concatenate the variables (external, group, individual)
     X = np.concatenate([X_ext, X_group, X_ind], axis=1)

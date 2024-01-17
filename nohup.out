@@ -1,0 +1,15 @@
+/workspaces/BI-LEVEL-SMC/particles/qmc.py:30: UserWarning: 
+Module lowdiscrepancy does not seem to be installed (see INSTALL
+notes). You will not be able to run SQMC (quasi-Monte Carlo version
+of SMC).
+
+  warnings.warn(qmc_warning)
+/workspaces/BI-LEVEL-SMC/paper/simulation/simulate_data.py:23: RuntimeWarning: covariance is not symmetric positive-semidefinite.
+  X = np.random.multivariate_normal(mean=np.repeat(0, p),
+[100, 50, 'ALA', 0.5]
+Traceback (most recent call last):
+  File "/workspaces/BI-LEVEL-SMC/paper/simulation/run_simulation.py", line 54, in <module>
+    time_measure.append({"n": n, 
+  File "/home/codespace/.local/lib/python3.10/site-packages/pandas/core/generic.py", line 6204, in __getattr__
+    return object.__getattribute__(self, name)
+AttributeError: 'DataFrame' object has no attribute 'append'. Did you mean: '_append'?
