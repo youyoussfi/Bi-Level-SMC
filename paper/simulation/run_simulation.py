@@ -5,23 +5,23 @@ import pickle
 import time
 import pandas as pd
 
-from simulate_data import simulate_data
-from paper.simulation.build_smc import bi_level_SMC  
+from paper.simulation.simulate_data import simulate_data
+from paper.build_smc import bi_level_SMC  
 from paper.simulation.simulation_config import settings
 
 # Parameters for data simulation
 p_group = 5
 p_ext = 5
-cov_var = 5
+cov_var = 0.5
 beta = 0.5
 
 # Parameters for SMC
-N = 10000
-P = 1000
-n_runs = 1
-n_procs = -5
+N = 25000
+P = 200
+n_runs = 10
+n_procs = -1
 
-time_measure = pd.DataFrame()
+time_measure = []
 for setting in settings:
     print(setting)
     # Parameters
@@ -57,8 +57,6 @@ for setting in settings:
                          "time": round((end-start)/60, 2), 
                          "prior": pi_ind})
     
-    break
-
 # Save the results
 file = open("paper/simulation/results/SMC_output_n_{}_p_{}_am_{}_prior_{}.pkl".format(n, p_ind, approximation_method, pi_ind), "wb")
 pickle.dump(smc, file)

@@ -14,35 +14,56 @@ The code is organized as follows:
 
 ```
 .
-├── run_smc.ipynb
-├── build_smc.py
-├── simulate_data.py
+├── README.md
+├── paper
+│   └── simulation
+│       ├── __init__.py
+│       ├── build_smc.py
+│       ├── results
+│       ├── run_simulation.py
+│       ├── simulate_data.py
+│       └── simulation_config.py
 ├── particles
-│ ├── init.py
-│ ├── binary_smc.py
-│ ├── collectors.py
-│ ├── core.py
-│ ├── distributions.py
-│ ├── hilbert.py
-│ ├── qmc.py
-│ ├── resampling.py
-│ ├── smc_samplers.py
-│ ├── smoothing.py
-│ ├── state_space_models.py
-│ └── utils.py
+│   ├── __init__.py
+│   ├── binary_smc.py
+│   ├── collectors.py
+│   ├── core.py
+│   ├── distributions.py
+│   ├── hilbert.py
+│   ├── qmc.py
+│   ├── resampling.py
+│   ├── smc_samplers.py
+│   ├── smoothing.py
+│   ├── state_space_models.py
+│   └── utils.py
+└── requirements.txt
+
 ```
 
 The `particles` folder is based on the Particles package developed by Nicolas Chopin: [Particles Package](https://github.com/nchopin/particles).
 
-- `run_smc.ipynb`: runs a SMC algorithm to perform bi-level variable selection.
+The `paper/simulation` folder contains all the materials needed to reproduce the simulated numerical experiments of the paper:
 - `build_smc.py`: builds the SMC algorithm.
 - `simulate_data.py`: creates synthetic data to run the SMC algorithm.
+- `simulation_config.py`: contains all the configuration settings for the numerical experiment
+- `run_simulation.py`: runs the SMC algorithm for the configuration settings given in `simulation_config.py`
 
-## Example
+
+## Installation
+
+Use [pip](https://pip.pypa.io/en/stable/) to install the Python libraries specified in the `requirements.txt` file
+```
+pip install -r requirements.txt
+```
+
+## Example 
 
 ```python
-from simulate_data import simulate_data
-from build_smc import bi_level_SMC  
+
+from paper.simulation.simulate_data import simulate_data
+from paper.build_smc import bi_level_SMC  
+from paper.simulation.simulation_config import settings
+
 import pickle 
 import numpy
 
