@@ -197,9 +197,9 @@ from numpy import random
 from scipy import optimize, stats, linalg
 from datetime import datetime
 
-import particles
-from particles import resampling as rs
-from particles.state_space_models import Bootstrap
+import build_particles
+from build_particles import resampling as rs
+from build_particles.state_space_models import Bootstrap
 
 ###################################
 # Static models
@@ -250,10 +250,10 @@ class StaticModel(object):
         t: int
             time
         """
-        raise NotImplementedError('StaticModel: logpyt not implemented')
+        raise NotImplementedError("StaticModel: logpyt not implemented")
 
     def loglik(self, theta, t=None):
-        """ log-likelihood at given parameter values.
+        """log-likelihood at given parameter values.
 
         Parameters
         ----------
@@ -272,7 +272,7 @@ class StaticModel(object):
         l = np.zeros(shape=theta.shape[0])
         for s in range(t + 1):
             l += self.logpyt(theta, s)
-        np.nan_to_num(l, copy=False, nan=-np.inf) 
+        np.nan_to_num(l, copy=False, nan=-np.inf)
         return l
 
     def logpost(self, theta, t=None):
@@ -292,6 +292,7 @@ class StaticModel(object):
         """
         return self.prior.logpdf(theta) + self.loglik(theta, t)
 
+
 class TemperingBridge(StaticModel):
     def __init__(self, base_dist=None):
         self.prior = base_dist
@@ -302,13 +303,14 @@ class TemperingBridge(StaticModel):
     def logpost(self, theta):
         return self.logtarget(theta)
 
+
 ###############################
 # Theta Particles
 
 
 def all_distinct(l, idx):
     """
-    Returns the list [l[i] for i in idx] 
+    Returns the list [l[i] for i in idx]
     When needed, objects l[i] are replaced by a copy, to make sure that
     the elements of the list are all distinct.
 
@@ -334,6 +336,7 @@ class FancyList:
     """A list that implements fancy indexing, and forces elements to be
     distinct.
     """
+
     def __init__(self, data):
         self.data = [] if data is None else data
 
@@ -375,9 +378,10 @@ def view_2d_array(theta):
     """
     v = theta.view(np.float)
     N = theta.shape[0]
-    v.shape = (N, - 1)
+    v.shape = (N, -1)
     # raise an error if v cannot be reshaped without creating a copy
     return v
+
 
 def gen_concatenate(*xs):
     if isinstance(xs[0], np.ndarray):
@@ -409,6 +413,7 @@ class ThetaParticles(object):
         # returns a new instance that contains particles 3, 5 and 10 (twice)
 
     """
+
     def __init__(self, shared=None, **fields):
         self.shared = {} if shared is None else shared
         self.__dict__.update(fields)
@@ -419,7 +424,7 @@ class ThetaParticles(object):
 
     @property
     def dict_fields(self):
-        return {k: v for k, v in self.__dict__.items() if k != 'shared'}
+        return {k: v for k, v in self.__dict__.items() if k != "shared"}
 
     def __getitem__(self, key):
         fields = {k: v[key] for k, v in self.dict_fields.items()}
@@ -439,23 +444,25 @@ class ThetaParticles(object):
 
     @classmethod
     def concatenate(cls, *xs):
-        fields = {k: gen_concatenate(*[getattr(x, k) for x in xs])
-                  for k in xs[0].dict_fields.keys()}
+        fields = {
+            k: gen_concatenate(*[getattr(x, k) for x in xs])
+            for k in xs[0].dict_fields.keys()
+        }
         return cls(shared=xs[0].shared.copy(), **fields)
 
     def copyto(self, src, where=None):
         """Emulates function `copyto` in NumPy.
 
-       Parameters
-       ----------
+        Parameters
+        ----------
 
-       where: (N,) bool ndarray
-            True if particle n in src must be copied.
-       src: (N,) `ThetaParticles` object
-            source
+        where: (N,) bool ndarray
+             True if particle n in src must be copied.
+        src: (N,) `ThetaParticles` object
+             source
 
-       for each n such that where[n] is True, copy particle n in src
-       into self (at location n)
+        for each n such that where[n] is True, copy particle n in src
+        into self (at location n)
         """
         for k, v in self.dict_fields.items():
             if isinstance(v, np.ndarray):
@@ -484,8 +491,10 @@ class ThetaParticles(object):
         for k, v in self.dict_fields.items():
             v[n] = getattr(src, k)[m]
 
+
 #############################
 # Basic importance sampler
+
 
 class ImportanceSampler(object):
     """Importance sampler.
@@ -501,6 +510,7 @@ class ImportanceSampler(object):
         the proposal distribution (if None, proposal is set to the prior)
 
     """
+
     def __init__(self, model=None, proposal=None):
         self.proposal = model.prior if proposal is None else proposal
         self.model = model
@@ -529,8 +539,10 @@ class ImportanceSampler(object):
         self.wgts = rs.Weights(lw=lw)
         self.log_norm_cst = self.wgts.log_mean
 
+
 ##################################
 # MCMC steps (within SMC samplers)
+
 
 class ArrayMCMC(object):
     """Base class for a (single) MCMC step applied to an array.
@@ -543,6 +555,7 @@ class ArrayMCMC(object):
     sample (W, x).
 
     """
+
     def __init__(self):
         pass
 
@@ -573,9 +586,10 @@ class ArrayMCMC(object):
         """
         raise NotImplementedError
 
+
 class ArrayMetropolis(ArrayMCMC):
-    """Base class for Metropolis steps (whatever the proposal).
-    """
+    """Base class for Metropolis steps (whatever the proposal)."""
+
     def proposal(self, x, xprop):
         raise NotImplementedError
 
@@ -584,45 +598,49 @@ class ArrayMetropolis(ArrayMCMC):
         delta_lp = self.proposal(x, xprop)
         target(xprop)
         lp_acc = xprop.lpost - x.lpost + delta_lp
-        pb_acc = np.exp(np.clip(lp_acc, None, 0.))
+        pb_acc = np.exp(np.clip(lp_acc, None, 0.0))
         mean_acc = np.mean(pb_acc)
-        accept = (random.rand(x.N) < pb_acc)
+        accept = random.rand(x.N) < pb_acc
         x.copyto(xprop, where=accept)
         if np.isnan(mean_acc):
-            import pdb; pdb.set_trace()
+            import pdb
+
+            pdb.set_trace()
         return mean_acc
 
+
 class ArrayRandomWalk(ArrayMetropolis):
-    """Gaussian random walk Metropolis.
-    """
+    """Gaussian random walk Metropolis."""
+
     def calibrate(self, W, x):
         arr = view_2d_array(x.theta)
         N, d = arr.shape
         m, cov = rs.wmean_and_cov(W, arr)
         scale = 2.38 / np.sqrt(d)
-        x.shared['chol_cov'] = scale * linalg.cholesky(cov, lower=True)
+        x.shared["chol_cov"] = scale * linalg.cholesky(cov, lower=True)
 
     def proposal(self, x, xprop):
-        L = x.shared['chol_cov']
+        L = x.shared["chol_cov"]
         arr = view_2d_array(x.theta)
         arr_prop = view_2d_array(xprop.theta)
-        arr_prop[:, :] = (arr + stats.norm.rvs(size=arr.shape) @ L.T)
-        return 0.
+        arr_prop[:, :] = arr + stats.norm.rvs(size=arr.shape) @ L.T
+        return 0.0
+
 
 class ArrayIndependentMetropolis(ArrayMetropolis):
-    """Independent Metropolis (Gaussian proposal).
-    """
-    def __init__(self, scale=1.):
+    """Independent Metropolis (Gaussian proposal)."""
+
+    def __init__(self, scale=1.0):
         self.scale = scale
 
     def calibrate(self, W, x):
         m, cov = rs.wmean_and_cov(W, view_2d_array(x.theta))
-        x.shared['mean'] = m
-        x.shared['chol_cov'] = self.scale * linalg.cholesky(cov, lower=True)
+        x.shared["mean"] = m
+        x.shared["chol_cov"] = self.scale * linalg.cholesky(cov, lower=True)
 
     def proposal(self, x, xprop):
-        mu = x.shared['mean']
-        L = x.shared['chol_cov']
+        mu = x.shared["mean"]
+        L = x.shared["chol_cov"]
         arr = view_2d_array(x.theta)
         arr_prop = view_2d_array(xprop.theta)
         z = stats.norm.rvs(size=arr.shape)
@@ -631,9 +649,10 @@ class ArrayIndependentMetropolis(ArrayMetropolis):
         arr_prop[:, :] = mu + z @ L.T
         return delta_lp
 
+
 class MCMCSequence:
-    """Base class for a (fixed length or adaptive) sequence of MCMC steps.
-    """
+    """Base class for a (fixed length or adaptive) sequence of MCMC steps."""
+
     def __init__(self, mcmc=None, len_chain=10):
         self.mcmc = ArrayRandomWalk() if mcmc is None else mcmc
         self.nsteps = len_chain - 1
@@ -646,8 +665,8 @@ class MCMCSequence:
 
 
 class MCMCSequenceWF(MCMCSequence):
-    """MCMC sequence for a waste-free SMC sampler (keep all intermediate states).
-    """
+    """MCMC sequence for a waste-free SMC sampler (keep all intermediate states)."""
+
     def __call__(self, x, target):
         xs = [x]
         xprev = x
@@ -658,14 +677,14 @@ class MCMCSequenceWF(MCMCSequence):
             ars.append(ar)
             xs.append(x)
         xout = x.concatenate(*xs)
-        prev_ars = x.shared.get('acc_rates', [])
-        xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
+        prev_ars = x.shared.get("acc_rates", [])
+        xout.shared["acc_rates"] = prev_ars + [ars]  # a list of lists
         return xout
 
 
 class AdaptiveMCMCSequence(MCMCSequence):
-    """MCMC sequence for a standard SMC sampler (keep only final states).
-    """
+    """MCMC sequence for a standard SMC sampler (keep only final states)."""
+
     def __init__(self, mcmc=None, len_chain=10, adaptive=False, delta_dist=0.1):
         super().__init__(mcmc=mcmc, len_chain=len_chain)
         self.adaptive = adaptive
@@ -674,7 +693,7 @@ class AdaptiveMCMCSequence(MCMCSequence):
     def __call__(self, x, target):
         xout = x.copy()
         ars = []
-        dist = 0.
+        dist = 0.0
         for _ in range(self.nsteps):  # if adaptive, nsteps is max nb of steps
             ar = self.mcmc.step(xout, target)
             ars.append(ar)
@@ -684,14 +703,14 @@ class AdaptiveMCMCSequence(MCMCSequence):
                 dist = np.mean(linalg.norm(diff, axis=1))
                 if np.abs(dist - prev_dist) < self.delta_dist * prev_dist:
                     break
-        prev_ars = x.shared.get('acc_rates', [])
-        xout.shared['acc_rates'] = prev_ars + [ars]  # a list of lists
+        prev_ars = x.shared.get("acc_rates", [])
+        xout.shared["acc_rates"] = prev_ars + [ars]  # a list of lists
         return xout
 
 
 #############################
 # FK classes for SMC samplers
-class FKSMCsampler(particles.FeynmanKac):
+class FKSMCsampler(build_particles.FeynmanKac):
     """Base FeynmanKac class for SMC samplers.
 
     Parameters
@@ -706,6 +725,7 @@ class FKSMCsampler(particles.FeynmanKac):
         type of move (a sequence of MCMC steps applied after resampling)
 
     """
+
     def __init__(self, model=None, wastefree=True, len_chain=10, move=None):
         self.model = model
         self.wastefree = wastefree
@@ -727,16 +747,18 @@ class FKSMCsampler(particles.FeynmanKac):
 
     def summary_format(self, smc):
         if smc.rs_flag:
-            ars = np.array(smc.X.shared['acc_rates'][-1])
-            to_add = ', Metropolis acc. rate (over %i steps): %.3f' % (
-                ars.size, ars.mean())
+            ars = np.array(smc.X.shared["acc_rates"][-1])
+            to_add = ", Metropolis acc. rate (over %i steps): %.3f" % (
+                ars.size,
+                ars.mean(),
+            )
         else:
-            to_add = ''
-        return 't=%i%s, ESS=%.2f' % (smc.t, to_add, smc.wgts.ESS)
+            to_add = ""
+        return "t=%i%s, ESS=%.2f" % (smc.t, to_add, smc.wgts.ESS)
 
     def time_to_resample(self, smc):
-        rs_flag = (smc.aux.ESS < smc.X.N * smc.ESSrmin)
-        smc.X.shared['rs_flag'] = rs_flag
+        rs_flag = smc.aux.ESS < smc.X.N * smc.ESSrmin
+        smc.X.shared["rs_flag"] = rs_flag
         if rs_flag:
             self.move.calibrate(smc.W, smc.X)
         return rs_flag
@@ -744,6 +766,7 @@ class FKSMCsampler(particles.FeynmanKac):
     def M0(self, N):
         N0 = N * self.len_chain if self.wastefree else N
         return self._M0(N0)
+
 
 class IBIS(FKSMCsampler):
     def logG(self, t, xp, x):
@@ -754,6 +777,7 @@ class IBIS(FKSMCsampler):
     def current_target(self, t):
         def func(x):
             x.lpost = self.model.logpost(x.theta, t=t)
+
         return func
 
     def _M0(self, N):
@@ -762,11 +786,12 @@ class IBIS(FKSMCsampler):
         return x0
 
     def M(self, t, xp):
-        if xp.shared['rs_flag']:
+        if xp.shared["rs_flag"]:
             return self.move(xp, self.current_target(t - 1))
             # in IBIS, target at time t is posterior given y_0:t-1
         else:
             return xp
+
 
 class AdaptiveTempering(FKSMCsampler):
     """Feynman-Kac class for adaptive tempering SMC.
@@ -779,10 +804,13 @@ class AdaptiveTempering(FKSMCsampler):
 
     See base class for other parameters.
     """
-    def __init__(self, model=None, wastefree=True, len_chain=10, move=None,
-                 ESSrmin=0.5):
-        super().__init__(model=model, wastefree=wastefree,
-                         len_chain=len_chain, move=move)
+
+    def __init__(
+        self, model=None, wastefree=True, len_chain=10, move=None, ESSrmin=0.5
+    ):
+        super().__init__(
+            model=model, wastefree=wastefree, len_chain=len_chain, move=move
+        )
         self.ESSrmin = ESSrmin
 
     def time_to_resample(self, smc):
@@ -793,18 +821,20 @@ class AdaptiveTempering(FKSMCsampler):
         if smc.X is None:
             return False  # We have not started yet
         else:
-            return smc.X.shared['exponents'][-1] >= 1.
+            return smc.X.shared["exponents"][-1] >= 1.0
 
     def update_path_sampling_est(self, x, delta):
         grid_size = 10
         binwidth = delta / (grid_size - 1)
-        new_ps_est = x.shared['path_sampling'][-1]
-        for i, e in enumerate(np.linspace(0., delta, grid_size)):
-            mult = 0.5 if i==0 or i==grid_size-1 else 1.
-            new_ps_est += (mult * binwidth *
-                           np.average(x.llik,
-                                      weights=rs.exp_and_normalise(e * x.llik)))
-            x.shared['path_sampling'].append(new_ps_est)
+        new_ps_est = x.shared["path_sampling"][-1]
+        for i, e in enumerate(np.linspace(0.0, delta, grid_size)):
+            mult = 0.5 if i == 0 or i == grid_size - 1 else 1.0
+            new_ps_est += (
+                mult
+                * binwidth
+                * np.average(x.llik, weights=rs.exp_and_normalise(e * x.llik))
+            )
+            x.shared["path_sampling"].append(new_ps_est)
 
     def logG_tempering(self, x, delta):
         dl = delta * x.llik
@@ -814,68 +844,70 @@ class AdaptiveTempering(FKSMCsampler):
 
     def logG(self, t, xp, x):
         ESSmin = self.ESSrmin * x.N
-        f = lambda e: rs.essl(e * x.llik) - ESSmin        
-        epn = x.shared['exponents'][-1]
-        
-        if f(1. - epn) > 0:  # we're done (last iteration)
-            delta = 1. - epn
-            new_epn = 1.
+        f = lambda e: rs.essl(e * x.llik) - ESSmin
+        epn = x.shared["exponents"][-1]
+
+        if f(1.0 - epn) > 0:  # we're done (last iteration)
+            delta = 1.0 - epn
+            new_epn = 1.0
             # set 1. manually so that we can safely test == 1.
         else:
             try:
-                delta = optimize.brentq(f, 1.e-12, 1. - epn)  # secant search
+                delta = optimize.brentq(f, 1.0e-12, 1.0 - epn)  # secant search
                 # left endpoint is >0, since f(0.) = nan if any likelihood = -inf
-                #delta = optimize.minimize(fun=f, x0=1.e-6, method='Newton-CG')['x']
+                # delta = optimize.minimize(fun=f, x0=1.e-6, method='Newton-CG')['x']
             except:
-                delta = 1.e-6
+                delta = 1.0e-6
                 ess = rs.essl(delta * x.llik)
                 while ess >= ESSmin:
-                    delta = delta/10
-                    ess = rs.essl(delta * x.llik)  
+                    delta = delta / 10
+                    ess = rs.essl(delta * x.llik)
                 print(ess, delta)
             new_epn = epn + delta
-            
-        x.shared['exponents'].append(new_epn)
+
+        x.shared["exponents"].append(new_epn)
         return self.logG_tempering(x, delta)
 
     def current_target(self, epn):
         def func(x):
             x.lprior = self.model.prior.logpdf(x.theta)
             x.llik = self.model.loglik(x.theta)
-            if epn > 0.:
+            if epn > 0.0:
                 x.lpost = x.lprior + epn * x.llik
             else:  # avoid having 0 x Nan
                 x.lpost = x.lprior.copy()
+
         return func
 
     def _M0(self, N):
         x0 = ThetaParticles(theta=self.model.prior.rvs(size=N))
-        x0.shared['exponents'] = [0.]
-        x0.shared['path_sampling'] = [0.]
-        self.current_target(0.)(x0)
+        x0.shared["exponents"] = [0.0]
+        x0.shared["path_sampling"] = [0.0]
+        self.current_target(0.0)(x0)
         return x0
 
     def M(self, t, xp):
-        epn = xp.shared['exponents'][-1]
+        epn = xp.shared["exponents"][-1]
         target = self.current_target(epn)
         return self.move(xp, target)
 
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
-        return msg + ', tempering exponent=%.3g' % smc.X.shared['exponents'][-1]
+        return msg + ", tempering exponent=%.3g" % smc.X.shared["exponents"][-1]
 
 
 #####################################
 # SMC^2
 
+
 def rec_to_dict(arr):
-    """ Turns record array *arr* into a dict """
+    """Turns record array *arr* into a dict"""
 
     return dict(zip(arr.dtype.names, arr))
 
 
 class SMC2(FKSMCsampler):
-    """ Feynman-Kac subclass for the SMC^2 algorithm.
+    """Feynman-Kac subclass for the SMC^2 algorithm.
 
     Parameters
     ----------
@@ -901,19 +933,30 @@ class SMC2(FKSMCsampler):
     move:   MCMCSequence object
         MCMC sequence
     """
-    def __init__(self, ssm_cls=None, prior=None, data=None, smc_options=None,
-                 fk_cls=None, init_Nx=100, ar_to_increase_Nx=-1.,
-                 wastefree=True, len_chain=10, move=None):
-        super().__init__(self, wastefree=wastefree, len_chain=len_chain,
-                         move=move)
+
+    def __init__(
+        self,
+        ssm_cls=None,
+        prior=None,
+        data=None,
+        smc_options=None,
+        fk_cls=None,
+        init_Nx=100,
+        ar_to_increase_Nx=-1.0,
+        wastefree=True,
+        len_chain=10,
+        move=None,
+    ):
+        super().__init__(self, wastefree=wastefree, len_chain=len_chain, move=move)
         # switch off collection of basic summaries (takes too much memory)
-        self.smc_options = {'collect': 'off'}
+        self.smc_options = {"collect": "off"}
         if smc_options is not None:
             self.smc_options.update(smc_options)
         self.fk_cls = Bootstrap if fk_cls is None else fk_cls
-        if 'model' in self.smc_options or 'data' in self.smc_options:
+        if "model" in self.smc_options or "data" in self.smc_options:
             raise ValueError(
-                'SMC2: options model and data are not allowed in smc_options')
+                "SMC2: options model and data are not allowed in smc_options"
+            )
         self.ssm_cls = ssm_cls
         self.prior = prior
         self.data = data
@@ -927,11 +970,11 @@ class SMC2(FKSMCsampler):
     def logG(self, t, xp, x):
         # exchange step (should occur only immediately after a move step)
         try:
-            ar = np.mean(x.shared['acc_rates'][-1])
+            ar = np.mean(x.shared["acc_rates"][-1])
         except:  # either list does not exist or is of length 0
-            ar = 1.
+            ar = 1.0
         low_ar = ar < self.ar_to_increase_Nx
-        we_increase_Nx = low_ar & x.shared.get('rs_flag', False)
+        we_increase_Nx = low_ar & x.shared.get("rs_flag", False)
         if we_increase_Nx:
             liw_Nx = self.exchange_step(x, t, 2 * x.pfs[0].N)
         # compute (estimate of) log p(y_t|\theta,y_{0:t-1})
@@ -941,21 +984,24 @@ class SMC2(FKSMCsampler):
             lpyt[m] = pf.loglt
         x.lpost += lpyt
         if t > 0:
-            x.shared['Nxs'].append(x.pfs[0].N)
+            x.shared["Nxs"].append(x.pfs[0].N)
         if we_increase_Nx:
             return lpyt + liw_Nx
         else:
             return lpyt
 
     def alg_instance(self, theta, N):
-        return particles.SMC(fk=self.fk_cls(ssm=self.ssm_cls(**theta),
-                                            data=self.data),
-                          N=N, **self.smc_options)
+        return build_particles.SMC(
+            fk=self.fk_cls(ssm=self.ssm_cls(**theta), data=self.data),
+            N=N,
+            **self.smc_options
+        )
 
     def current_target(self, t, Nx):
         def func(x):
-            x.pfs = FancyList([self.alg_instance(rec_to_dict(theta), Nx)
-                               for theta in x.theta])
+            x.pfs = FancyList(
+                [self.alg_instance(rec_to_dict(theta), Nx) for theta in x.theta]
+            )
             x.lpost = self.prior.logpdf(x.theta)
             is_finite = np.isfinite(x.lpost)
             if t >= 0:
@@ -964,16 +1010,18 @@ class SMC2(FKSMCsampler):
                         for _ in range(t + 1):
                             next(pf)
                         x.lpost[m] += pf.logLt
+
         return func
 
     def _M0(self, N):
-        x0 = ThetaParticles(theta=self.prior.rvs(size=N),
-                            shared={'Nxs': [self.init_Nx]})
+        x0 = ThetaParticles(
+            theta=self.prior.rvs(size=N), shared={"Nxs": [self.init_Nx]}
+        )
         self.current_target(0, self.init_Nx)(x0)
         return x0
 
     def M(self, t, xp):
-        if xp.shared['rs_flag']:
+        if xp.shared["rs_flag"]:
             return self.move(xp, self.current_target(t - 1, xp.pfs[0].N))
             # in IBIS, target at time t is posterior given y_0:t-1
         else:
@@ -981,10 +1029,10 @@ class SMC2(FKSMCsampler):
 
     def exchange_step(self, x, t, new_Nx):
         old_lpost = x.lpost.copy()
-        # exchange step occurs at beginning of step t, so y_t not processed yet
+        # exchange step occurs at beginning of step t, so y_t not processed yet
         self.current_target(t - 1, new_Nx)(x)
         return x.lpost - old_lpost
 
     def summary_format(self, smc):
         msg = FKSMCsampler.summary_format(self, smc)
-        return msg + ', Nx=%i' % smc.X.pfs[0].N
+        return msg + ", Nx=%i" % smc.X.pfs[0].N

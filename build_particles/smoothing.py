@@ -138,10 +138,9 @@ from numpy import random
 from scipy import stats  # worker
 import time
 
-import particles # worker
-from particles import hilbert
-from particles import qmc
-from particles import resampling as rs
+import build_particles  # worker
+from build_particles import hilbert, qmc, resampling as rs
+
 
 def generate_hist_obj(option, smc):
     if option is True:
@@ -153,7 +152,8 @@ def generate_hist_obj(option, smc):
     elif isinstance(option, int) and option >= 0:
         return RollingParticleHistory(option)
     else:
-        raise ValueError('store_history: invalid option')
+        raise ValueError("store_history: invalid option")
+
 
 class PartialParticleHistory(object):
     """Partial history.
@@ -161,6 +161,7 @@ class PartialParticleHistory(object):
     History that records the particle system only at certain times.
     See `smoothing` module doc for more details.
     """
+
     def __init__(self, func):
         self.is_save_time = func
         self.X, self.wgts = {}, {}
@@ -171,6 +172,7 @@ class PartialParticleHistory(object):
             self.X[t] = smc.X
             self.wgts[t] = smc.wgts
 
+
 class RollingParticleHistory(object):
     """Rolling window history.
 
@@ -178,6 +180,7 @@ class RollingParticleHistory(object):
     deques. See `smoothing` module doc for more details.
 
     """
+
     def __init__(self, length):
         self.X = deque([], length)
         self.A = deque([], length)
@@ -185,14 +188,12 @@ class RollingParticleHistory(object):
 
     @property
     def N(self):
-        """Number of particles at each time step.
-        """
+        """Number of particles at each time step."""
         return self.X[0].shape[0]
 
     @property
     def T(self):
-        """Current length of history.
-        """
+        """Current length of history."""
         return len(self.X)
 
     def save(self, smc):
@@ -211,6 +212,7 @@ class RollingParticleHistory(object):
             Bs.append(A[Bs[-1]])
         Bs.reverse()
         return np.array(Bs)
+
 
 class ParticleHistory(RollingParticleHistory):
     """Particle history.
@@ -243,7 +245,7 @@ class ParticleHistory(RollingParticleHistory):
 
     def save(self, smc):
         RollingParticleHistory.save(self, smc)
-        if hasattr(smc, 'h_order'):
+        if hasattr(smc, "h_order"):
             self.h_orders.append(smc.h_order)
 
     def extract_one_trajectory(self):
@@ -262,9 +264,11 @@ class ParticleHistory(RollingParticleHistory):
         return traj[::-1]
 
     def _check_h_orders(self):
-        if not hasattr(self, 'h_orders'):
-            raise ValueError('QMC FFBS requires particles have been Hilbert\
-                             ordered during the forward pass')
+        if not hasattr(self, "h_orders"):
+            raise ValueError(
+                "QMC FFBS requires particles have been Hilbert\
+                             ordered during the forward pass"
+            )
 
     def backward_sampling(self, M, linear_cost=False, return_ar=False):
         """Generate smoothing trajectories using FFBS.
@@ -337,9 +341,9 @@ class ParticleHistory(RollingParticleHistory):
             while nrejected > 0:
                 nattempts += nrejected
                 nprop = gen.dequeue(nrejected)
-                lpr_acc = (self.fk.logpt(t + 1, self.X[t][nprop],
-                                            who_rejected)
-                           - self.fk.upper_bound_trans(t + 1))
+                lpr_acc = self.fk.logpt(
+                    t + 1, self.X[t][nprop], who_rejected
+                ) - self.fk.upper_bound_trans(t + 1)
                 newly_accepted = np.log(random.rand(nrejected)) < lpr_acc
                 still_rejected = np.logical_not(newly_accepted)
                 idx[t, where_rejected[newly_accepted]] = nprop[newly_accepted]
@@ -355,8 +359,9 @@ class ParticleHistory(RollingParticleHistory):
         """
         for m in range(M):
             for t in reversed(range(self.T - 1)):
-                lwm = (self.wgts[t].lw + self.fk.logpt(t + 1, self.X[t],
-                                                     self.X[t + 1][idx[t + 1, m]]))
+                lwm = self.wgts[t].lw + self.fk.logpt(
+                    t + 1, self.X[t], self.X[t + 1][idx[t + 1, m]]
+                )
                 idx[t, m] = rs.multinomial_once(rs.exp_and_normalise(lwm))
 
     def backward_sampling_qmc(self, M):
@@ -377,7 +382,9 @@ class ParticleHistory(RollingParticleHistory):
         hT = hilbert.hilbert_sort(self.X[-1])
         # searchsorted to avoid having to sort in place u according to u[:,T-1]
         idx = np.searchsorted(np.cumsum(self.wgts[-1].W[hT]), u[:, -1])
-        paths = [self.X[-1][hT][idx], ]
+        paths = [
+            self.X[-1][hT][idx],
+        ]
         for t in reversed(range(self.T - 1)):
             idx = np.empty(M, dtype=np.int64)
             for m, xn in enumerate(paths[-1]):
@@ -389,39 +396,46 @@ class ParticleHistory(RollingParticleHistory):
         paths.reverse()
         return paths
 
+    #     def backward_sampling_lincost_pedagogical(self, M):
+    #         """ O(N) FFBS
+    #
+    #             Don't use this! This is the *pedagogical* version of O(N) FFBS:
+    #             code is simpler to understand, but quite slow, because it has loops
+    #         """
+    #         if not hasattr(self.fk, 'upper_bound_trans'):
+    #             raise ValueError('O(N) version of backward smoothing'
+    #                              +'requires to specify constant upper_bound_trans(t)'
+    #                              +' s.t. log p_t(x_t|x_{t-1})<upper_bound_trans(t)')
+    #         idx = np.empty((self.T, M), dtype=int)
+    #         idx[-1, :] = rs.multinomial(M, self.wgts[-1].W)
+    #         nattempts = 0
+    #         for t in xrange(self.T - 2, -1, -1):
+    #             gen = rs.MulinomialQueue(M, self.wgts[t].W)
+    #             for m in xrange(M):
+    #                 while True:
+    #                     nattempts += 1
+    #                     nprop = gen.dequeue(1)
+    #                     lpr_acc = (self.fk.logpt(t+1, self.X[t][nprop],
+    #                                                 self.X[t+1][idx[t+1, m]])
+    #                                -self.fk.upper_bound_trans(t+1))
+    #                     if np.log(random.rand()) < lpr_acc:
+    #                         break
+    #                 idx[t, m] = nprop
+    #         print('O(N) FFBS: acceptance rate is %1.2f' %
+    #               (M * (self.T - 1) / nattempts))
+    #         return [self.X[t][idx[t, :]] for t in range(self.T)]
 
-#     def backward_sampling_lincost_pedagogical(self, M):
-#         """ O(N) FFBS
-#
-#             Don't use this! This is the *pedagogical* version of O(N) FFBS:
-#             code is simpler to understand, but quite slow, because it has loops
-#         """
-#         if not hasattr(self.fk, 'upper_bound_trans'):
-#             raise ValueError('O(N) version of backward smoothing'
-#                              +'requires to specify constant upper_bound_trans(t)'
-#                              +' s.t. log p_t(x_t|x_{t-1})<upper_bound_trans(t)')
-#         idx = np.empty((self.T, M), dtype=int)
-#         idx[-1, :] = rs.multinomial(M, self.wgts[-1].W)
-#         nattempts = 0
-#         for t in xrange(self.T - 2, -1, -1):
-#             gen = rs.MulinomialQueue(M, self.wgts[t].W)
-#             for m in xrange(M):
-#                 while True:
-#                     nattempts += 1
-#                     nprop = gen.dequeue(1)
-#                     lpr_acc = (self.fk.logpt(t+1, self.X[t][nprop],
-#                                                 self.X[t+1][idx[t+1, m]])
-#                                -self.fk.upper_bound_trans(t+1))
-#                     if np.log(random.rand()) < lpr_acc:
-#                         break
-#                 idx[t, m] = nprop
-#         print('O(N) FFBS: acceptance rate is %1.2f' %
-#               (M * (self.T - 1) / nattempts))
-#         return [self.X[t][idx[t, :]] for t in range(self.T)]
-
-    def two_filter_smoothing(self, t, info, phi, loggamma, linear_cost=False,
-                             return_ess=False, modif_forward=None,
-                             modif_info=None):
+    def two_filter_smoothing(
+        self,
+        t,
+        info,
+        phi,
+        loggamma,
+        linear_cost=False,
+        return_ess=False,
+        modif_forward=None,
+        modif_info=None,
+    ):
         """Two-filter smoothing.
 
         Parameters
@@ -442,13 +456,12 @@ class ParticleHistory(RollingParticleHistory):
         """
         ti = self.T - 2 - t  # t+1 in reverse
         if t < 0 or t >= self.T - 1:
-            raise ValueError(
-                'two-filter smoothing: t must be in range 0,...,T-2')
+            raise ValueError("two-filter smoothing: t must be in range 0,...,T-2")
         lwinfo = info.hist.wgts[ti].lw - loggamma(info.hist.X[ti])
         if linear_cost:
-            return self._two_filter_smoothing_ON(t, ti, info, phi, lwinfo,
-                                               return_ess,
-                                               modif_forward, modif_info)
+            return self._two_filter_smoothing_ON(
+                t, ti, info, phi, lwinfo, return_ess, modif_forward, modif_info
+            )
         else:
             return self._two_filter_smoothing_ON2(t, ti, info, phi, lwinfo)
 
@@ -457,21 +470,25 @@ class ParticleHistory(RollingParticleHistory):
 
         This method should not be called directly, see two_filter_smoothing.
         """
-        sp, sw = 0., 0.
+        sp, sw = 0.0, 0.0
         upb = lwinfo.max() + self.wgts[t].lw.max()
-        if hasattr(self.fk, 'upper_bound_trans'):
+        if hasattr(self.fk, "upper_bound_trans"):
             upb += self.fk.upper_bound_trans(t + 1)
         # Loop over n, to avoid having in memory a NxN matrix
         for n in range(self.N):
-            omegan = np.exp(lwinfo + self.wgts[t].lw[n] - upb
-                            + self.fk.logpt(t + 1, self.X[t][n],
-                                               info.hist.X[ti]))
+            omegan = np.exp(
+                lwinfo
+                + self.wgts[t].lw[n]
+                - upb
+                + self.fk.logpt(t + 1, self.X[t][n], info.hist.X[ti])
+            )
             sp += np.sum(omegan * phi(self.X[t][n], info.hist.X[ti]))
             sw += np.sum(omegan)
         return sp / sw
 
-    def _two_filter_smoothing_ON(self, t, ti, info, phi, lwinfo, return_ess,
-                               modif_forward, modif_info):
+    def _two_filter_smoothing_ON(
+        self, t, ti, info, phi, lwinfo, return_ess, modif_forward, modif_info
+    ):
         """O(N) version of two-filter smoothing.
 
         This method should not be called directly, see two_filter_smoothing.
@@ -492,16 +509,16 @@ class ParticleHistory(RollingParticleHistory):
         if modif_info is not None:
             log_omega -= modif_info[I]
         Om = rs.exp_and_normalise(log_omega)
-        est = np.average(phi(self.X[t][J], info.hist.X[ti][I]), axis=0,
-                         weights=Om)
+        est = np.average(phi(self.X[t][J], info.hist.X[ti][I]), axis=0, weights=Om)
         if return_ess:
-            return (est, 1. / np.sum(Om**2))
+            return (est, 1.0 / np.sum(Om**2))
         else:
             return est
 
 
-def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
-                     add_func=None, log_gamma=None):
+def smoothing_worker(
+    method=None, N=100, fk=None, fk_info=None, add_func=None, log_gamma=None
+):
     """Generic worker for off-line smoothing algorithms.
 
     This worker may be used in conjunction with utils.multiplexer in order to
@@ -534,43 +551,52 @@ def smoothing_worker(method=None, N=100, fk=None, fk_info=None,
     if fk_info is None:
         fk_info = fk.__class__(ssm=fk.ssm, data=fk.data[::-1])
     est = np.zeros(T - 1)
-    if method=='FFBS_QMC':
-        pf = particles.SQMC(fk=fk, N=N, store_history=True)
+    if method == "FFBS_QMC":
+        pf = build_particles.SQMC(fk=fk, N=N, store_history=True)
     else:
-        pf = particles.SMC(fk=fk, N=N, store_history=True)
+        pf = build_particles.SMC(fk=fk, N=N, store_history=True)
     tic = time.clock()
     pf.run()
-    if method in ['FFBS_ON', 'FFBS_ON2', 'FFBS_QMC']:
-        if method.startswith('FFBS_ON'):
-            z = pf.hist.backward_sampling(N, linear_cost=(method == 'FFBS_ON'))
+    if method in ["FFBS_ON", "FFBS_ON2", "FFBS_QMC"]:
+        if method.startswith("FFBS_ON"):
+            z = pf.hist.backward_sampling(N, linear_cost=(method == "FFBS_ON"))
         else:
             z = pf.hist.backward_sampling_qmc(N)
         for t in range(T - 1):
             est[t] = np.mean(add_func(t, z[t], z[t + 1]))
-    elif method in ['two-filter_ON2', 'two-filter_ON', 'two-filter_ON_prop']:
-        infopf = particles.SMC(fk=fk_info, N=N, store_history=True)
+    elif method in ["two-filter_ON2", "two-filter_ON", "two-filter_ON_prop"]:
+        infopf = build_particles.SMC(fk=fk_info, N=N, store_history=True)
         infopf.run()
         for t in range(T - 1):
             psi = lambda x, xf: add_func(t, x, xf)
-            if method == 'two-filter_ON2':
+            if method == "two-filter_ON2":
                 est[t] = pf.hist.two_filter_smoothing(t, infopf, psi, log_gamma)
             else:
                 ti = T - 2 - t  # t+1 for info filter
-                if method == 'two-filter_ON_prop':
-                    modif_fwd = stats.norm.logpdf(pf.hist.X[t],
-                                          loc=np.mean(infopf.hist.X[ti + 1]),
-                                          scale=np.std(infopf.hist.X[ti + 1]))
-                    modif_info = stats.norm.logpdf(infopf.hist.X[ti],
-                                           loc=np.mean(pf.hist.X[t + 1]),
-                                           scale=np.std(pf.hist.X[t + 1]))
+                if method == "two-filter_ON_prop":
+                    modif_fwd = stats.norm.logpdf(
+                        pf.hist.X[t],
+                        loc=np.mean(infopf.hist.X[ti + 1]),
+                        scale=np.std(infopf.hist.X[ti + 1]),
+                    )
+                    modif_info = stats.norm.logpdf(
+                        infopf.hist.X[ti],
+                        loc=np.mean(pf.hist.X[t + 1]),
+                        scale=np.std(pf.hist.X[t + 1]),
+                    )
                 else:
                     modif_fwd, modif_info = None, None
-                est[t] = pf.hist.two_filter_smoothing(t, infopf, psi, log_gamma,
-                                                     linear_cost=True,
-                                                     modif_forward=modif_fwd,
-                                                     modif_info=modif_info)
+                est[t] = pf.hist.two_filter_smoothing(
+                    t,
+                    infopf,
+                    psi,
+                    log_gamma,
+                    linear_cost=True,
+                    modif_forward=modif_fwd,
+                    modif_info=modif_info,
+                )
     else:
-        print('no such method?')
+        print("no such method?")
     cpu_time = time.clock() - tic
-    print(method + ' took %.2f s for N=%i' % (cpu_time, N))
-    return {'est': est, 'cpu': cpu_time}
+    print(method + " took %.2f s for N=%i" % (cpu_time, N))
+    return {"est": est, "cpu": cpu_time}

@@ -211,7 +211,7 @@ from __future__ import division, print_function
 from numpy import random
 import numpy as np
 
-from particles import resampling as rs
+from build_particles import resampling as rs
 
 
 class Summaries(object):
@@ -244,6 +244,7 @@ class Collector(object):
     * (optionally) define class attribute `signature` (the signature of the
       constructor, by default, an empty dict)
     """
+
     signature = {}
 
     @property
@@ -259,37 +260,44 @@ class Collector(object):
             if k in self.signature.keys():
                 setattr(self, k, v)
             else:
-                raise ValueError('Collector %s: unknown parameter %s' %
-                                 (self.__class__.__name__, k))
+                raise ValueError(
+                    "Collector %s: unknown parameter %s" % (self.__class__.__name__, k)
+                )
 
     def __call__(self):
         # clone the object
-        return self.__class__(**{k: getattr(self, k) for k in
-                                 self.signature.keys()})
+        return self.__class__(**{k: getattr(self, k) for k in self.signature.keys()})
 
     def collect(self, smc):
         self.summary.append(self.fetch(smc))
 
+
 # Default collectors
 ####################
 
+
 class ESSs(Collector):
-    summary_name = 'ESSs'
+    summary_name = "ESSs"
+
     def fetch(self, smc):
         return smc.wgts.ESS
+
 
 class LogLts(Collector):
     def fetch(self, smc):
         return smc.logLt
 
+
 class Rs_flags(Collector):
     def fetch(self, smc):
         return smc.rs_flag
+
 
 default_collector_cls = [ESSs, LogLts, Rs_flags]
 
 # Moments
 #########
+
 
 class Moments(Collector):
     """Collects empirical moments (e.g. mean and variance) of the particles.
@@ -302,14 +310,17 @@ class Moments(Collector):
     If no function is provided, the default moment of the Feynman-Kac class
     is used (mean and variance of the particles, see ``core.FeynmanKac``).
     """
-    signature = {'mom_func': None}
+
+    signature = {"mom_func": None}
 
     def fetch(self, smc):
         f = smc.fk.default_moments if self.mom_func is None else self.mom_func
         return f(smc.W, smc.X)
 
+
 # Smoothing collectors
 ######################
+
 
 class Fixed_lag_smooth(Collector):
     """Compute some function of fixed-lag trajectories.
@@ -317,7 +328,8 @@ class Fixed_lag_smooth(Collector):
     Must be used in conjunction with a rolling window history (store_history=k,
     with k an int, see module ``smoothing``).
     """
-    signature = {'phi': None}
+
+    signature = {"phi": None}
 
     def test_func(self, x):
         if self.phi is None:
@@ -332,8 +344,8 @@ class Fixed_lag_smooth(Collector):
 
 
 class OnlineSmootherMixin(object):
-    """Mix-in for on-line smoothing algorithms.
-    """
+    """Mix-in for on-line smoothing algorithms."""
+
     def fetch(self, smc):
         if smc.t == 0:
             self.Phi = smc.fk.add_func(0, None, smc.X)
@@ -350,8 +362,7 @@ class OnlineSmootherMixin(object):
         raise NotImplementedError
 
     def save_for_later(self, smc):
-        """Save certain quantities that are required in the next iteration.
-        """
+        """Save certain quantities that are required in the next iteration."""
         pass
 
 
@@ -364,12 +375,13 @@ class Online_smooth_ON2(Collector, OnlineSmootherMixin):
     def update(self, smc):
         prev_Phi = self.Phi.copy()
         for n in range(smc.N):
-            lwXn = (self.prev_logw
-                    + smc.fk.logpt(smc.t, self.prev_X, smc.X[n]))
+            lwXn = self.prev_logw + smc.fk.logpt(smc.t, self.prev_X, smc.X[n])
             WXn = rs.exp_and_normalise(lwXn)
             self.Phi[n] = np.average(
                 prev_Phi + smc.fk.add_func(smc.t, self.prev_X, smc.X[n]),
-                axis=0, weights=WXn)
+                axis=0,
+                weights=WXn,
+            )
 
     def save_for_later(self, smc):
         self.prev_X = smc.X
@@ -377,11 +389,11 @@ class Online_smooth_ON2(Collector, OnlineSmootherMixin):
 
 
 class Paris(Collector, OnlineSmootherMixin):
-    signature = {'Nparis': 2}
+    signature = {"Nparis": 2}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.nprop = [0.]
+        self.nprop = [0.0]
 
     def update(self, smc):
         prev_Phi = self.Phi.copy()
@@ -393,13 +405,13 @@ class Paris(Collector, OnlineSmootherMixin):
                 while True:
                     a = mq.dequeue(1)
                     nprop += 1
-                    lp = (smc.fk.logpt(smc.t, self.prev_X[a], smc.X[n])
-                          - smc.fk.upper_bound_log_pt(smc.t))
+                    lp = smc.fk.logpt(
+                        smc.t, self.prev_X[a], smc.X[n]
+                    ) - smc.fk.upper_bound_log_pt(smc.t)
                     if np.log(random.rand()) < lp:
                         break
                 As[m] = a
-            mod_Phi = (prev_Phi[As]
-                       + smc.fk.add_func(smc.t, self.prev_X[As], smc.X[n]))
+            mod_Phi = prev_Phi[As] + smc.fk.add_func(smc.t, self.prev_X[As], smc.X[n])
             self.Phi[n] = np.average(mod_Phi, axis=0)
         self.nprop.append(nprop)
 

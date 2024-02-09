@@ -21,11 +21,11 @@ notes). You will not be able to run SQMC (quasi-Monte Carlo version
 of SMC).
 """
 
-sobol_warning =  """
+sobol_warning = """
 lowdiscrepancy.sobol(%i, %i, %i, %i, 1, 0) generated points outside (0, 1)
 """
 try:
-    from particles import lowdiscrepancy
+    from build_particles import lowdiscrepancy
 except ImportError:
     warnings.warn(qmc_warning)
 
@@ -33,7 +33,7 @@ max_int_32 = np.iinfo(np.int32).max
 
 
 def sobol(N, dim, scrambled=1):
-    """ Sobol sequence.
+    """Sobol sequence.
 
     Parameters
     ----------
@@ -67,13 +67,14 @@ def sobol(N, dim, scrambled=1):
     while True:
         seed = np.random.randint(max_int_32)
         out = lowdiscrepancy.sobol(N, dim, scrambled, seed, 1, 0)
-        if np.all(out < 1.) and np.all(out > 0.):
+        if np.all(out < 1.0) and np.all(out > 0.0):
             return out
         else:
             warnings.warn(sobol_warning % (N, dim, scrambled, seed))
 
+
 def halton(N, dim):
-    """ Halton sequence.
+    """Halton sequence.
 
     Component i of the sequence consists of a Van der Corput sequence in base b_i,
     where b_i is the i-th prime number.

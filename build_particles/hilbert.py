@@ -9,7 +9,7 @@ from numba import jit
 
 
 def invlogit(x):
-    return 1. / (1. + np.exp(-x))
+    return 1.0 / (1.0 + np.exp(-x))
 
 
 @jit(nopython=True)
@@ -54,7 +54,7 @@ def hilbert_sort(x):
     if d == 1:
         return np.argsort(x, axis=0)
     xs = invlogit((x - np.mean(x, axis=0)) / np.std(x, axis=0))
-    maxint = np.floor(2**(62 / d))
+    maxint = np.floor(2 ** (62 / d))
     xint = np.floor(xs * maxint).astype(np.int)
     return np.argsort(hilbert_array(xint))
 
@@ -72,7 +72,7 @@ def hilbert_sort(x):
 def int_to_Hilbert(i, nD=2):  # Default is the 2D Hilbert walk.
     index_chunks = unpack_index(i, nD)
     nChunks = len(index_chunks)
-    mask = 2 ** nD - 1
+    mask = 2**nD - 1
     start, end = initial_start_end(nChunks, nD)
     coord_chunks = np.zeros(nChunks, dtype=np.int64)
     for j in range(nChunks):
@@ -87,7 +87,7 @@ def Hilbert_to_int(coords):
     nD = coords.shape[0]
     coord_chunks = unpack_coords(coords)
     nChunks = len(coord_chunks)
-    mask = 2 ** nD - 1
+    mask = 2**nD - 1
     start, end = initial_start_end(nChunks, nD)
     index_chunks = np.zeros(nChunks, dtype=np.int64)
     for j in range(nChunks):
@@ -102,7 +102,7 @@ def initial_start_end(nChunks, nD):
     # This orients the largest cube so that
     # its start is the origin (0 corner), and
     # the first step is along the x axis, regardless of nD and nChunks:
-    return 0, 2**((-nChunks - 1) % nD)  # in Python 0 <=  a % b  < b.
+    return 0, 2 ** ((-nChunks - 1) % nD)  # in Python 0 <=  a % b  < b.
 
 
 # Unpacking arguments and packing results of int <-> Hilbert functions.
@@ -117,9 +117,10 @@ def initial_start_end(nChunks, nD):
 # unpack_index( int index, nD ) --> list of index chunks.
 #
 
+
 @jit(nopython=True)
 def unpack_index(i, nD):
-    p = 2**nD     # Chunks are like digits in base 2**nD.
+    p = 2**nD  # Chunks are like digits in base 2**nD.
 
     # numpy doesn't have logs of arbitrary base, have to do this instead:
     nChunks = int(np.ceil(np.lop(i + 1) / np.log(p)))
@@ -146,6 +147,7 @@ def pack_index(chunks, nD):
 
 # unpack_coords( list of nD coords ) --> list of coord chunks each nD bits.
 
+
 @jit(nopython=True)
 def unpack_coords(coords):
     nD = coords.shape[0]
@@ -158,7 +160,7 @@ def unpack_coords(coords):
 
     # nChunks2 = max(1, int(ceil(log(biggest + 1, 2))))  # max # of bits
 
-    #print (nChunks, nChunks2)
+    # print (nChunks, nChunks2)
     return transpose_bits(coords, nChunks)
 
 
@@ -173,6 +175,7 @@ def pack_coords(chunks, nD):
 #    Like a matrix transpose where ints are rows and bits are columns.
 #    Earlier srcs become higher bits in dests;
 #    earlier dests come from higher bits of srcs.
+
 
 @jit(nopython=True)
 def transpose_bits(srcs, nDests):
@@ -195,7 +198,7 @@ def transpose_bits(srcs, nDests):
 @jit(nopython=True)
 def gray_encode(bn):
     assert bn >= 0
-    #assert type( bn ) in [ int, long ]
+    # assert type( bn ) in [ int, long ]
 
     return bn ^ (bn // 2)
 
@@ -223,7 +226,7 @@ def gray_decode(n):
 @jit(nopython=True)
 def gray_encode_travel(start, end, mask, i):
     travel_bit = start ^ end
-    modulus = mask + 1          # == 2**nBits
+    modulus = mask + 1  # == 2**nBits
     # travel_bit = 2**p, the bit we want to travel.
     # Canonical Gray code travels the top bit, 2**(nBits-1).
     # So we need to rotate by ( p - (nBits-1) ) == (p + 1) mod nBits.
@@ -235,7 +238,7 @@ def gray_encode_travel(start, end, mask, i):
 @jit(nopython=True)
 def gray_decode_travel(start, end, mask, g):
     travel_bit = start ^ end
-    modulus = mask + 1          # == 2**nBits
+    modulus = mask + 1  # == 2**nBits
     rg = (g ^ start) * (modulus // (travel_bit * 2))
     return gray_decode((rg | (rg // modulus)) & mask)
 
