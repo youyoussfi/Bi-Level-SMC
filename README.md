@@ -108,5 +108,5 @@ smc = bi_level_SMC(data=data,
 # Get posterior probabilities of inclusion
 run = 0
 post_prob = numpy.mean(smc[run]['output'].X.theta, axis=0)
-group_prob = post_prob[:p_group])
-ind_prob = post_prob[p_group:])
+group_prob = post_prob[:p_group]
+ind_prob = post_prob[p_group:]

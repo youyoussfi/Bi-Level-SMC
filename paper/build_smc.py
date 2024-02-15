@@ -3,6 +3,7 @@ from build_particles import distributions
 from build_particles import smc_samplers
 from build_particles import binary_smc
 
+
 def bi_level_SMC(
     data: tuple,
     p_group: int,
